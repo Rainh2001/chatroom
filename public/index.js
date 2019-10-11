@@ -6,20 +6,30 @@ window.onload = function(){
     field = document.getElementById("field");
     button = document.getElementById("send");
     button.addEventListener("click", function(event){
-        ws.send(field.value);
+        if(field.value.length !== 0){
+            ws.send(field.value);
+        }
+        field.value = "";
     });
 }
 
-ws.onopen = function(event){
-    // document.querySelector("canvas").addEventListener("mousemove", function(event){
-    //     let x = event.pageX - this.offsetLeft;
-    //     let y = event.pageY - this.offsetTop;
-    //     ws.send(`x${x}y${y}`);
-    // });
+// ws.onopen = function(event){
+//     document.querySelector("canvas").addEventListener("mousemove", function(event){
+//         let x = event.pageX - this.offsetLeft;
+//         let y = event.pageY - this.offsetTop;
+//         ws.send(`x${x}y${y}`);
+//     });
+// }
+
+ws.onmessage = function(event){
+    
+}
+
+function getName(){
 
 }
 
-ws.onmessage = function(event){
+function getColor(){
     
 }
 

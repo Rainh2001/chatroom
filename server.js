@@ -3,15 +3,27 @@ const app = express();
 const http = require('http');
 const WebSocketServer = require('websocket').server;
 const fs = require('fs');
-const port = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080;
 
 var client = [];
+
+class Client {
+    constructor(connection){
+        this.connection = connection;
+    }   
+    setName(name){
+        this.name = name;
+    }
+    setColor(color){
+        this.color = color;
+    }
+}   
 
 app.use(express.static(`${__dirname}/public`));
 const server = http.createServer(app);
 
-server.listen(port, function(){
-    console.log(`${getTime()}> Server running on port: ${port}`);
+server.listen(PORT, function(){
+    console.log(`${getTime()}> Server running on port: ${PORT}`);
 });
 
 const ws = new WebSocketServer({
@@ -22,15 +34,26 @@ const ws = new WebSocketServer({
 ws.on('request', function(request){
     console.log(`${getTime()}> Connection from: ${request.origin}`);
     let connection = request.accept(null, request.origin);
-    client.push(connection);
-    console.log(`Clients: ${client.length}`);
+    let index = client.push(new Client(connection)) - 1;
     connection.on('message', function(message){
-        console.log(message);
-        // let obj = {
-        //     name: "Rain Holloway",
-        //     time: getTime()
-        // }
-        // connection.sendUTF(JSON.stringify(obj, null, 4));
+        let text = message.utf8Data;
+        if(text.slice(0, 4) === "name"){
+            client[index].setName(text.slice(4).trim());
+        } else if(text.slice(0, 5) === "color"){
+            client[index].setColor(text.slice(5).trim());
+        } else {
+            client.forEach(client => {
+                client.connection.sendUTF(JSON.stringify({
+                    name: client[index].name,
+                    color: client[index].color,
+                    message: text
+                }, null, 4));
+            });
+        }
+    });
+    connection.on('close', function(status){
+        console.log(`Connection closed: ${status}`);
+        client.splice(index, 1);
     });
 });
 
