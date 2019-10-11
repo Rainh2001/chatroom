@@ -9,14 +9,14 @@ var client = [];
 
 class Client {
     constructor(connection){
-        this.connection = connection;
+        let _name = "";
+        let _color = "";
+        this.setName = name => _name = name;
+        this.getName = () => _name;
+        this.setColor = color => _color = color;
+        this.getColor = () => _color;
+        this.connection = () => connection;
     }   
-    setName(name){
-        this.name = name;
-    }
-    setColor(color){
-        this.color = color;
-    }
 }   
 
 app.use(express.static(`${__dirname}/public`));
@@ -36,19 +36,22 @@ ws.on('request', function(request){
     let connection = request.accept(null, request.origin);
     let index = client.push(new Client(connection)) - 1;
     connection.on('message', function(message){
-        let text = message.utf8Data;
-        if(text.slice(0, 4) === "name"){
-            client[index].setName(text.slice(4).trim());
-        } else if(text.slice(0, 5) === "color"){
-            client[index].setColor(text.slice(5).trim());
-        } else {
-            client.forEach(client => {
-                client.connection.sendUTF(JSON.stringify({
-                    name: client[index].name,
-                    color: client[index].color,
-                    message: text
-                }, null, 4));
-            });
+        message = JSON.parse(message.utf8Data);
+        console.log(message);
+        switch(message.type){
+            case "name": client[index].setName(message.value); break;
+            case "color": client[index].setColor(message.value); break;
+            default:
+                for(let i = 0; i < client.length; i++){
+                    if(i !== index){
+                        client[i].connection().sendUTF(JSON.stringify({
+                            name: client[index].name,
+                            color: client[index].color,
+                            message: message.value
+                        }, null, 4));
+                    }
+                }
+                break;
         }
     });
     connection.on('close', function(status){

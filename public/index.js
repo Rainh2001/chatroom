@@ -7,18 +7,17 @@ window.onload = function(){
     button = document.getElementById("send");
     button.addEventListener("click", function(event){
         if(field.value.length !== 0){
-            ws.send(field.value);
+            ws.send(JSON.stringify({
+                type: "text",
+                value: field.value.trim()
+            }));
         }
         field.value = "";
     });
 }
 
 // ws.onopen = function(event){
-//     document.querySelector("canvas").addEventListener("mousemove", function(event){
-//         let x = event.pageX - this.offsetLeft;
-//         let y = event.pageY - this.offsetTop;
-//         ws.send(`x${x}y${y}`);
-//     });
+
 // }
 
 ws.onmessage = function(event){
