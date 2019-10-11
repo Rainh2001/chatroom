@@ -3,3 +3,7 @@
     padding: 0;
     border-collapse: collapse;
 }
+
+canvas {
+    border: 1px solid blue;
+}
