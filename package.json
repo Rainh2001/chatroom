@@ -1,0 +1,27 @@
+{
+  "name": "chatroom",
+  "version": "1.0.0",
+  "description": "Chatroom made with Node/Express and Socket.io",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rainh2001/chatroom.git"
+  },
+  "keywords": [
+    "chat"
+  ],
+  "author": "Rain Holloway",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Rainh2001/chatroom/issues"
+  },
+  "homepage": "https://github.com/Rainh2001/chatroom#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
+  }
+}
