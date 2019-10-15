@@ -2,18 +2,17 @@ const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
+const fs = require('fs');
 const PORT = 8080;
 var client = [];
 var online = [];
 
 class Client {
-    constructor(socket, numId){
-        let _name = null;
+    constructor(socket, name){
         // this.socket = socket;
-        // this.numId = numId;
-        this.setName = name => _name = name;
-        this.getName = () => _name;
-        this.getNumId = () => numId;
+        // this.name = name;
+        this.setName = newName => name = newName;
+        this.getName = () => name;
         this.getSocket = () => socket;
     }
 }
@@ -24,33 +23,34 @@ http.listen(PORT, function(){
     console.log(`Server listening on port: ${PORT}`);
 });
 
+app.get("online.json", function(req, res){
+    let onlineArr = fs.readFile("/public/online.json", function(){
+        res.json(onlineArr);
+    });
+});
+
 io.on("connection", function(socket){    
     (function(){
-        do {
-            var id = Math.floor(Math.random() * 999 + 1);
-            // Use a binary search; client array is sorted by numId
-        } while(client.find(function(current){
-            current.getNumId() === id;
-        }));
+        
+        let url = socket.handshake.headers.referer;
+        let pos = url.indexOf("=") + 1;
+        username = url.slice(pos);
+        console.log(`${username} connected`)
     
-        let index = client.push(new Client(socket.id, id)) - 1;
-        client[index].setName(`Guest${client[index].getNumId()}`);
-        online.push(client[index].getName());
-        console.log(`${client[index].getName()} connected`)
-        socket.emit("guestname", client[index].getName());
-        socket.broadcast.emit("userconnect", client[index].getName());
-        
-        // if(client.length > 1){
-        //     let i = client.length-1;
-        //     let temp = client[i];
-        //     while(i > 0 && temp.getNumId() < client[i-1].getNumId()){
-        //         client[i] = client[i-1];
-        //         i--;
-        //     }
-        //     client[i] = temp;
-        // }
-        
+        client.push(new Client(socket.id, username));
+        online.push(username);
+
+        let onlineArr = JSON.parse(fs.readFileSync("public/online.json"));
+        onlineArr.push(username);
+        fs.writeFileSync("public/online.json", JSON.stringify(onlineArr, null, 4));
+
+        socket.broadcast.emit("userconnect", username);
+        socket.emit("verifyname", JSON.stringify({
+            username,
+            valid: true
+        }));
         socket.emit("getonline", JSON.stringify({online}));
+
     })();
 
     socket.on("chat", function(message){
@@ -68,7 +68,6 @@ io.on("connection", function(socket){
     });
 
     socket.on("namechange", function(message){
-        console.log("e");
         message = JSON.parse(message);
         let found = false;
         let i = 0;
@@ -88,6 +87,9 @@ io.on("connection", function(socket){
                 if(client[i].getSocket() === socket.id){
                     client[i].setName(message.newName);
                     online[i] = message.newName;
+                    let onlineArr = JSON.parse(fs.readFileSync("public/online.json"));
+                    onlineArr[i] = message.newName;
+                    fs.writeFileSync("public/online.json", JSON.stringify(onlineArr, null, 4));
                     break;
                 }
             }
@@ -106,6 +108,8 @@ io.on("connection", function(socket){
         io.emit("userdisconnect", client[index].getName());
         client.splice(index, 1);
         online.splice(index, 1);
+        let onlineArr = JSON.parse(fs.readFileSync("public/online.json"));
+        onlineArr.splice(index, 1);
+        fs.writeFileSync("public/online.json", JSON.stringify(onlineArr, null, 4));
     });
 });
-

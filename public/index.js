@@ -1,137 +1,44 @@
 window.onload = function(){
-    const socket = io(),
-    chatInput = document.getElementById("chat-input"),
-    sendButton = document.getElementById("send-button"),
-    nameInput = document.getElementById("name-input"),
-    nameButton = document.getElementById("name-button");
-
-    var username = null;
-    var online = [];
+    const nameInput = document.getElementById("name-input");
+    const joinButton = document.getElementById("join-button");
 
     nameInput.addEventListener("keyup", function(event){
         if(event.keyCode === 13){
-            nameButton.click();
+            joinButton.click();
         }
     });
 
-    nameButton.addEventListener("click", function(event){
-        let newName = nameInput.value;
-        socket.emit("namechange", JSON.stringify({
-            username, newName
-        }));
-    });
-
-    let typing = false;
-    chatInput.addEventListener("keyup", function(event){
-        setTimeout(function(){
-            if(chatInput.value.length && !typing){
-                typing = true;
-                socket.emit("typing", username);
-            } else if(chatInput.value.length === 0 && typing){
-                typing = false;
-                socket.emit("stoppedtyping", username);
-            }
-        }, 1);
-    });
-
-    chatInput.addEventListener("keyup", function(event){
-        if(event.keyCode === 13){
-            sendButton.click();
+    joinButton.addEventListener("click", function(){
+        if(nameInput.value.length > 0){
+            getOnline(nameInput.value, verifyName);
         }
     });
 
-    sendButton.addEventListener("click", function(event){
-        let text = chatInput.value;
-        if(text.length){
-            let obj = JSON.stringify({
-                time: getTime(),
-                username,
-                text
-            });
-            socket.emit("chat", obj);
-            chatInput.value = "";
-        }
-    });
-
-    // User connects and acquires guest name
-    socket.on("guestname", function(message){
-        username = message;
-    });
-
-    socket.on("getonline", function(message){
-        message = JSON.parse(message);
-        online = message.online
-        console.log(online);
-    });
-
-    // User receives verification for new name
-    socket.on("verifyname", function(message){
-        message = JSON.parse(message);
-        if(message.valid){
-            username = message.username;
-            nameInput.value = "";
-        } else {
-            console.log(`${message.username} is already taken`);
-        }
-        //TODO
-    });
-
-    // Receive message that user has changed their name
-    socket.on("namechange", function(message){
-        message = JSON.parse(message);
-        console.log(`${message.username} changed their name to: ${message.newName}`);
-        //TODO
-    });
-
-    // Received message that user is typing
-    socket.on("typing", function(message){
-        console.log(`${message} is typing...`);
-        //TODO
-    });
-
-    // Received message that user has stopped typing
-    socket.on("stoppedtyping", function(message){
-        console.log(`${message} stopped typing`);
-        //TODO
-    });
-
-    // Received chat message from another user
-    socket.on("chat", function(message){
-        message = JSON.parse(message);
-        console.log(`[${message.time}] ${message.username}: ${message.text}`);
-        //TODO
-    });
-
-    // Update online list: add user
-    socket.on("userconnect", function(message){
-        console.log(`${message} has connected`); 
-        online.push(message);
-        console.log(online);
-        //TODO
-    });
-
-    // Update online list: remove user
-    socket.on("userdisconnect", function(message){
-        console.log(`${message} has disconnected`);
-        for(let i = 0; i < online.length; i++){
-            if(online[i] === message){
-                online.splice(i, 1);
+    function verifyName(username, res){
+        res = JSON.parse(res);
+        let found = false;
+        for(let i = 0; i < res.length; i++){
+            if(res[i] === username){
+                found = true;
                 break;
             }
         }
-        console.log(online);
-        //TODO
-    });
-
+        if(!found){
+            window.location = `/chatroom.html?username=${username}`;
+        } else {
+            nameInput.value = "";
+            // Display "Invalid username"
+        }
+    }
 }
 
-function getTime(){
-    let date = new Date();
-    let hours = date.getHours();
-    hours = hours < 10 ? `0${hours}` : hours;
-    let minutes = date.getMinutes();
-    minutes = minutes < 10 ? `0${minutes}` : minutes;
-    let seconds = date.getSeconds();
-    seconds = seconds < 10 ? `0${seconds}` : seconds;
-    return `${hours}:${minutes}:${seconds}`;
+function getOnline(username, customFunction){
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function(){
+        if(this.readyState === 4 && this.status === 200){
+            customFunction(username, this.responseText);
+        }
+    }
+    xhttp.open("GET", "online.json", true);
+    xhttp.send(`username=${username}`);
 }
