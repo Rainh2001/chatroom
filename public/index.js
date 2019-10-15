@@ -1,14 +1,11 @@
-var socket, chatInput, sendButton,
-    nameInput, nameButton;
-
 window.onload = function(){
-    socket = io();
-    chatInput = document.getElementById("chat-input");
-    sendButton = document.getElementById("send-button");
-    nameInput = document.getElementById("name-input");
+    const socket = io(),
+    chatInput = document.getElementById("chat-input"),
+    sendButton = document.getElementById("send-button"),
+    nameInput = document.getElementById("name-input"),
     nameButton = document.getElementById("name-button");
 
-    var username = `Guest${Math.floor(Math.random()*999 + 1)}`
+    var username = null;
 
     nameInput.addEventListener("keyup", function(event){
         if(event.keyCode === 13){
@@ -17,20 +14,20 @@ window.onload = function(){
     });
 
     nameButton.addEventListener("click", function(event){
-        username = nameInput.value;
-        nameInput.value = "";
-        //TODO: broadcast name change to other sockets
+        let newName = nameInput.value;
+        socket.emit("namechange", JSON.stringify({
+            username, newName
+        }));
     });
 
     let typing = false;
     chatInput.addEventListener("keydown", function(event){
         if(chatInput.value.length && !typing){
             typing = true;
-            //TODO: broadcast to other sockets that ${username} is typing
-
+            socket.emit("typing", JSON.stringify({username}));
         } else if(!chatInput.value.length && typing){
             typing = false;
-            //TODO: broadcast to other sockets that ${username} isn't typing anymore
+            socket.emit("stoppedtyping", JSON.stringify({username}));
         }
     });
 
@@ -53,16 +50,40 @@ window.onload = function(){
         }
     });
 
-    socket.on("typing", function(message){
+    // User connects and acquires guest name
+    socket.on("guestname", function(message){
+        username = message;
+    });
+
+    // User receives verification for new name
+    socket.on("verifyname", function(message){
+        //TODO
+        username = message.username;
+        nameInput.value = "";
+    });
+
+    // Receive message that user has changed their name
+    socket.on("namechange", function(message){
+        console.log(`${message.username} changed their name to: ${message.newName}`);
         //TODO
     });
 
+    // Received message that user is typing
+    socket.on("typing", function(message){
+        console.log(`${message.username} is typing...`);
+        //TODO
+    });
+
+    // Received message that user has stopped typing
+    socket.on("stoppedtyping", function(message){
+        console.log(`${message.username} stopped typing.`);
+        //TODO
+    });
+
+    // Received chat message from another user
     socket.on("chat", function(message){
         message = JSON.parse(message);
         console.log(message);
-    });
-
-    socket.on("namechange", function(message){
         //TODO
     });
 
