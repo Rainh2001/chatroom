@@ -44,7 +44,7 @@ io.on("connection", function(socket){
         }
     
         if(verified){
-            console.log(`${username} connected`)
+            console.log(`[${getTime()}] ${username} connected`)
     
             client.push(new Client(socket.id, username));
             online.push(username);
@@ -65,7 +65,7 @@ io.on("connection", function(socket){
     socket.on("chat", function(message){
         socket.broadcast.emit("chat", message);
         message = JSON.parse(message);
-        console.log(message);
+        console.log(`[${message.time}] ${message.username}: ${message.text}`);
     });
 
     socket.on("typing", function(message){
@@ -94,6 +94,7 @@ io.on("connection", function(socket){
             let index = 0;
             for(let i = index; i < client.length; i++){
                 if(client[i].getSocket() === socket.id){
+                    console.log(`[${getTime()}] ${online[i]} changed their name to: ${message.newName}`);
                     client[i].setName(message.newName);
                     online[i] = message.newName;
                     fs.writeFileSync("public/online.json", JSON.stringify(online, null, 4));
@@ -112,7 +113,7 @@ io.on("connection", function(socket){
                     index = i;
                 }
             }
-            console.log(`${client[index].getName()} has disconnected`);
+            console.log(`[${getTime()}] ${client[index].getName()} has disconnected`);
             io.emit("userdisconnect", client[index].getName());
             client.splice(index, 1);
             online.splice(index, 1);
@@ -120,3 +121,14 @@ io.on("connection", function(socket){
         }
     });
 });
+
+function getTime(){
+    let date = new Date();
+    let hours = date.getHours();
+    hours = hours < 10 ? `0${hours}` : hours;
+    let minutes = date.getMinutes();
+    minutes = minutes < 10 ? `0${minutes}` : minutes;
+    let seconds = date.getSeconds();
+    seconds = seconds < 10 ? `0${seconds}` : seconds;
+    return `${hours}:${minutes}:${seconds}`;
+}
