@@ -59,6 +59,10 @@ window.onload = function(){
         console.log(online);
     });
 
+    socket.on("unverified", function(message){
+        window.location = message;
+    });
+
     // User receives verification for new name
     socket.on("verifyname", function(message){
         message = JSON.parse(message);

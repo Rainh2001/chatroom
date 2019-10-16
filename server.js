@@ -30,26 +30,35 @@ app.get("online.json", function(req, res){
 });
 
 io.on("connection", function(socket){    
+    let url = socket.handshake.headers.referer;
+    username = url.slice(url.indexOf("=") + 1);
+    let verified = true;
+
     (function(){
-        
-        let url = socket.handshake.headers.referer;
-        let pos = url.indexOf("=") + 1;
-        username = url.slice(pos);
-        console.log(`${username} connected`)
+
+        for(let i = 0; i < online.length; i++){
+            if(username === online[i]){
+                verified = false;
+                break;
+            }
+        }
     
-        client.push(new Client(socket.id, username));
-        online.push(username);
+        if(verified){
+            console.log(`${username} connected`)
+    
+            client.push(new Client(socket.id, username));
+            online.push(username);
+            fs.writeFileSync("public/online.json", JSON.stringify(online, null, 4));
 
-        let onlineArr = JSON.parse(fs.readFileSync("public/online.json"));
-        onlineArr.push(username);
-        fs.writeFileSync("public/online.json", JSON.stringify(onlineArr, null, 4));
-
-        socket.broadcast.emit("userconnect", username);
-        socket.emit("verifyname", JSON.stringify({
-            username,
-            valid: true
-        }));
-        socket.emit("getonline", JSON.stringify({online}));
+            socket.broadcast.emit("userconnect", username);
+            socket.emit("verifyname", JSON.stringify({
+                username,
+                valid: true
+            }));
+            socket.emit("getonline", JSON.stringify({online}));
+        } else {
+            socket.emit("unverified", "index.html?valid=false");
+        }
 
     })();
 
@@ -87,9 +96,7 @@ io.on("connection", function(socket){
                 if(client[i].getSocket() === socket.id){
                     client[i].setName(message.newName);
                     online[i] = message.newName;
-                    let onlineArr = JSON.parse(fs.readFileSync("public/online.json"));
-                    onlineArr[i] = message.newName;
-                    fs.writeFileSync("public/online.json", JSON.stringify(onlineArr, null, 4));
+                    fs.writeFileSync("public/online.json", JSON.stringify(online, null, 4));
                     break;
                 }
             }
@@ -98,18 +105,18 @@ io.on("connection", function(socket){
     });
 
     socket.on("disconnect", function(){
-        let index = 0;
-        for(let i = index; i < client.length; i++){
-            if(client[i].getSocket() === socket.id){
-                index = i;
+        if(verified){
+            let index = 0;
+            for(let i = index; i < client.length; i++){
+                if(client[i].getSocket() === socket.id){
+                    index = i;
+                }
             }
+            console.log(`${client[index].getName()} has disconnected`);
+            io.emit("userdisconnect", client[index].getName());
+            client.splice(index, 1);
+            online.splice(index, 1);
+            fs.writeFileSync("public/online.json", JSON.stringify(online, null, 4));
         }
-        console.log(`${client[index].getName()} has disconnected`);
-        io.emit("userdisconnect", client[index].getName());
-        client.splice(index, 1);
-        online.splice(index, 1);
-        let onlineArr = JSON.parse(fs.readFileSync("public/online.json"));
-        onlineArr.splice(index, 1);
-        fs.writeFileSync("public/online.json", JSON.stringify(onlineArr, null, 4));
     });
 });
