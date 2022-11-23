@@ -22,6 +22,6 @@
   "homepage": "https://github.com/Rainh2001/chatroom#readme",
   "dependencies": {
     "express": "^4.17.1",
-    "socket.io": "^2.3.0"
+    "socket.io": "^2.5.0"
   }
 }
